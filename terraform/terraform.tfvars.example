@@ -1,0 +1,4 @@
+aws_region   = "us-east-1"
+environment  = "dev"
+project_name = "verichain"
+lab_role_arn = "arn:aws:iam::YOUR_ACCOUNT_ID:role/LabRole"

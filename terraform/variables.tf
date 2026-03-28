@@ -32,3 +32,10 @@ variable "lambda_timeout_seconds" {
   type        = number
   default     = 30
 }
+
+variable "lab_role_arn" {
+  description = "Pre-existing LabRole ARN from AWS Academy student account"
+  type        = string
+  # You set this in terraform.tfvars (gitignored)
+  # Example: "arn:aws:iam::123456789012:role/LabRole"
+}
