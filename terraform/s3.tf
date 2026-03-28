@@ -1,4 +1,3 @@
-# Bucket 1: stores the actual ID documents users upload
 resource "aws_s3_bucket" "documents" {
   bucket        = "${var.project_name}-documents-${var.environment}-${data.aws_caller_identity.current.account_id}"
   force_destroy = var.environment != "prod"
@@ -33,6 +32,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "documents" {
   rule {
     id     = "transition-old-documents"
     status = "Enabled"
+    filter {
+      prefix = ""
+    }
     transition {
       days          = 30
       storage_class = "STANDARD_IA"
@@ -44,7 +46,6 @@ resource "aws_s3_bucket_lifecycle_configuration" "documents" {
   }
 }
 
-# Bucket 2: stores zipped Lambda code for deployments
 resource "aws_s3_bucket" "lambda_code" {
   bucket        = "${var.project_name}-lambda-code-${var.environment}-${data.aws_caller_identity.current.account_id}"
   force_destroy = true

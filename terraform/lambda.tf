@@ -1,29 +1,24 @@
-# CloudWatch log group for Lambda logs
 resource "aws_cloudwatch_log_group" "lambda_logs" {
   name              = "/aws/lambda/${var.project_name}-api-${var.environment}"
   retention_in_days = 30
 }
 
-# Placeholder zip — real code deployed later by GitHub Actions
 data "archive_file" "lambda_placeholder" {
   type        = "zip"
   output_path = "/tmp/verichain_placeholder.zip"
-
   source {
     content  = "exports.handler = async () => ({ statusCode: 200, body: JSON.stringify({ status: 'placeholder' }) });"
     filename = "index.js"
   }
 }
 
-# Lambda function
 resource "aws_lambda_function" "api" {
-  function_name = "${var.project_name}-api-${var.environment}"
-  role          = var.lab_role_arn
-  runtime       = "nodejs20.x"
-  handler       = "dist/lambda.handler"
-  memory_size   = var.lambda_memory_mb
-  timeout       = var.lambda_timeout_seconds
-
+  function_name    = "${var.project_name}-api-${var.environment}"
+  role             = var.lab_role_arn
+  runtime          = "nodejs20.x"
+  handler          = "dist/lambda.handler"
+  memory_size      = var.lambda_memory_mb
+  timeout          = var.lambda_timeout_seconds
   filename         = data.archive_file.lambda_placeholder.output_path
   source_code_hash = data.archive_file.lambda_placeholder.output_base64sha256
 
@@ -38,12 +33,9 @@ resource "aws_lambda_function" "api" {
     }
   }
 
-  depends_on = [
-    aws_cloudwatch_log_group.lambda_logs
-  ]
+  depends_on = [aws_cloudwatch_log_group.lambda_logs]
 }
 
-# API Gateway — the public URL your frontend calls
 resource "aws_apigatewayv2_api" "main" {
   name          = "${var.project_name}-api-${var.environment}"
   protocol_type = "HTTP"
@@ -56,6 +48,11 @@ resource "aws_apigatewayv2_api" "main" {
   }
 }
 
+resource "aws_cloudwatch_log_group" "api_gateway_logs" {
+  name              = "/aws/apigateway/${var.project_name}-${var.environment}"
+  retention_in_days = 30
+}
+
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.main.id
   name        = "$default"
@@ -63,12 +60,8 @@ resource "aws_apigatewayv2_stage" "default" {
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gateway_logs.arn
+    format          = "$context.requestId $context.httpMethod $context.routeKey $context.status"
   }
-}
-
-resource "aws_cloudwatch_log_group" "api_gateway_logs" {
-  name              = "/aws/apigateway/${var.project_name}-${var.environment}"
-  retention_in_days = 30
 }
 
 resource "aws_apigatewayv2_integration" "lambda" {
